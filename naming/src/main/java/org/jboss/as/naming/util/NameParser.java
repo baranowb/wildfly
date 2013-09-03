@@ -22,7 +22,12 @@
 
 package org.jboss.as.naming.util;
 
+import java.util.Enumeration;
+import java.util.Properties;
+import java.util.regex.Pattern;
+
 import javax.naming.CompositeName;
+import javax.naming.CompoundName;
 import javax.naming.Name;
 import javax.naming.NamingException;
 
@@ -34,7 +39,17 @@ import javax.naming.NamingException;
 public class NameParser implements javax.naming.NameParser {
 
     public static final NameParser INSTANCE = new NameParser();
-
+    public static final String PATTERN = "[a-zA-Z]*://.*";
+    public static final String ESCAPE = "\\";
+    public static final String TO_REPLACE = "://";
+    public static final String REPLACE_WITH = ":"+ESCAPE+"/"+ESCAPE+"/";
+    private static final Properties syntax = new Properties();
+    static{
+        syntax.put("jndi.syntax.direction", "left_to_right");
+        syntax.put("jndi.syntax.ignorecase", "false");
+        syntax.put("jndi.syntax.separator", "/");
+        syntax.put("jndi.syntax.escape", ESCAPE);
+    }
     private NameParser() {
     }
 
@@ -45,7 +60,22 @@ public class NameParser implements javax.naming.NameParser {
      * @return The parsed name.
      * @throws NamingException
      */
-    public Name parse(String name) throws NamingException {
-        return new CompositeName(name);
+    public Name parse(final String name) throws NamingException {
+        String toParse = name;
+        if(Pattern.matches(PATTERN, name)){
+            toParse = toParse.replace(TO_REPLACE, REPLACE_WITH);
+            return new InnerCompositeName(new CompoundName(toParse, syntax).getAll());
+        } else {
+            return new CompositeName(toParse);
+        }
+    }
+
+    static class InnerCompositeName extends CompositeName{
+
+        private static final long serialVersionUID = -1861862759030023651L;
+
+        public InnerCompositeName(Enumeration<String> comps) {
+            super(comps);
+        }
     }
 }

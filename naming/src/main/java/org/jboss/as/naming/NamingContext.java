@@ -196,7 +196,6 @@ public class NamingContext implements EventContext {
         }
 
         final Name absoluteName = getAbsoluteName(name);
-
         Object result;
         try {
             result = namingStore.lookup(absoluteName,dereference);
