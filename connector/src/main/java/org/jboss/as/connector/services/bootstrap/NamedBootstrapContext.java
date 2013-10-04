@@ -41,9 +41,10 @@ public class NamedBootstrapContext extends BaseCloneableBootstrapContext {
      * Constructor
      * @param name The name of the WorkManager
      */
-    public NamedBootstrapContext(String name) {
+    public NamedBootstrapContext(final String name, final String workManagerName) {
         super();
         setName(name);
+        setWorkManagerName(workManagerName);
     }
 
     /**

@@ -21,6 +21,17 @@
  */
 package org.jboss.as.test.integration.management.api;
 
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ADD;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.NAME;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OUTCOME;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.PROCESS_STATE;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.REMOVE;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RESPONSE_HEADERS;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUCCESS;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.VALUE;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.WRITE_ATTRIBUTE_OPERATION;
+import static org.jboss.as.test.integration.management.util.ModelUtil.createOpNode;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InterfaceAddress;
@@ -46,21 +57,11 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ADD;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.NAME;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OUTCOME;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.PROCESS_STATE;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.REMOVE;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RESPONSE_HEADERS;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUCCESS;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.VALUE;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.WRITE_ATTRIBUTE_OPERATION;
+import org.jboss.as.controller.client.helpers.Operations;
 import org.jboss.as.network.NetworkUtils;
-import static org.jboss.as.test.integration.management.util.ModelUtil.createOpNode;
+
 
 /**
  *
@@ -68,7 +69,6 @@ import static org.jboss.as.test.integration.management.util.ModelUtil.createOpNo
  */
 @RunWith(Arquillian.class)
 @RunAsClient
-@Ignore("ARQ-791")
 public class SocketsAndInterfacesTestCase extends ContainerResourceMgmtTestBase {
 
     private static final Logger logger = Logger.getLogger(SocketsAndInterfacesTestCase.class);
@@ -77,7 +77,8 @@ public class SocketsAndInterfacesTestCase extends ContainerResourceMgmtTestBase 
     URL url;
     private NetworkInterface testNic;
     private static final int TEST_PORT = 9091;
-
+    private static final int TEST_PORT_OFFSET = 5;
+    
     @Deployment
     public static Archive<?> getDeployment() {
         JavaArchive ja = ShrinkWrap.create(JavaArchive.class, "dummy.jar");
@@ -101,19 +102,22 @@ public class SocketsAndInterfacesTestCase extends ContainerResourceMgmtTestBase 
         // add interface
         ModelNode op = createOpNode("interface=test-interface", ADD);
         op.get("nic").set(testNic.getName());
-        ModelNode result = executeOperation(op);
+        ModelNode result = executeOperation(op,false);
+        Assert.assertTrue(result.toString(),Operations.isSuccessfulOutcome(result));
 
         // add socket binding using created interface
         op = createOpNode("socket-binding-group=standard-sockets/socket-binding=test-binding", ADD);
         op.get("interface").set("test-interface");
         op.get("port").set(TEST_PORT);
-        result = executeOperation(op);
+        result = executeOperation(op,false);
+        Assert.assertTrue(result.toString(),Operations.isSuccessfulOutcome(result));
 
 
         // add a web connector so we can test the interface
         op = createOpNode("subsystem=undertow/server=default-server/http-listener=test", ADD);
         op.get("socket-binding").set("test-binding");
-        result = executeOperation(op);
+        result = executeOperation(op,false);
+        Assert.assertTrue(result.toString(),Operations.isSuccessfulOutcome(result));
 
         // test the connector
         String testHost = NetworkUtils.canonize(testNic.getInetAddresses().nextElement().getHostName());
@@ -123,7 +127,7 @@ public class SocketsAndInterfacesTestCase extends ContainerResourceMgmtTestBase 
         // change socket binding port
         op = createOpNode("socket-binding-group=standard-sockets/socket-binding=test-binding", WRITE_ATTRIBUTE_OPERATION);
         op.get(NAME).set("port");
-        op.get(VALUE).set(TEST_PORT + 1);
+        op.get(VALUE).set(TEST_PORT + TEST_PORT_OFFSET);
         result = executeOperation(op, false);
         Assert.assertEquals(SUCCESS, result.get(OUTCOME).asString());
         Assert.assertTrue(result.get(RESPONSE_HEADERS).get(PROCESS_STATE).asString().equals("reload-required"));
@@ -131,11 +135,10 @@ public class SocketsAndInterfacesTestCase extends ContainerResourceMgmtTestBase 
         logger.info("Restarting server.");
 
         // reload server
-        op = createOpNode(null, "reload");
-        result = executeOperation(op);
+        reload();
 
         // wait until the connector is available on the new port
-        final String testUrl = new URL("http", testHost, TEST_PORT + 1, "/").toString();
+        final String testUrl = new URL("http", testHost, TEST_PORT + TEST_PORT_OFFSET, "/").toString();
         RetryTaskExecutor<Boolean> rte = new RetryTaskExecutor<Boolean>();
         rte.retryTask(new Callable<Boolean>(){
             public Boolean call() throws Exception {
@@ -163,7 +166,8 @@ public class SocketsAndInterfacesTestCase extends ContainerResourceMgmtTestBase 
 
         // remove connector
         op = createOpNode("subsystem=undertow/server=default-server/http-listener=test", REMOVE);
-        result = executeOperation(op);
+        result = executeOperation(op,false);
+        Assert.assertTrue(result.toString(),Operations.isSuccessfulOutcome(result));
 
         // check that the connector is down
         Assert.assertFalse("Could not connect to created connector.",WebUtil.testHttpURL(new URL(
@@ -171,11 +175,13 @@ public class SocketsAndInterfacesTestCase extends ContainerResourceMgmtTestBase 
 
         // remove socket binding
         op = createOpNode("socket-binding-group=standard-sockets/socket-binding=test-binding", REMOVE);
-        result = executeOperation(op);
+        result = executeOperation(op,false);
+        Assert.assertTrue(result.toString(),Operations.isSuccessfulOutcome(result));
 
         // remove interface
         op = createOpNode("interface=test-interface", REMOVE);
-        result = executeOperation(op);
+        result = executeOperation(op,false);
+        Assert.assertTrue(result.toString(),Operations.isSuccessfulOutcome(result));
 
     }
 
