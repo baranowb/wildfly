@@ -47,7 +47,6 @@ import org.junit.runner.RunWith;
 @RunWith(Arquillian.class)
 @RunAsClient
 @ServerSetup(SingleSignOnUnitTestCase.SingleSignOnUnitTestCaseSetup.class)
-@Ignore(value="ARQ-791 Arquillian is unable to reconnect to JMX server if the connection is lost")
 @Category(CommonCriteria.class)
 public class SingleSignOnUnitTestCase {
 

@@ -69,7 +69,8 @@ public class BootstrapContextAdd extends AbstractAddStepHandler {
 
         ServiceTarget serviceTarget = context.getServiceTarget();
 
-        CloneableBootstrapContext ctx = new NamedBootstrapContext(name);
+        CloneableBootstrapContext ctx = new NamedBootstrapContext(name,workmanager);
+
                 final BootStrapContextService bootCtxService = new BootStrapContextService(ctx, name, usingDefaultWm);
                 newControllers.add(serviceTarget
                         .addService(ConnectorServices.BOOTSTRAP_CONTEXT_SERVICE.append(name), bootCtxService)
