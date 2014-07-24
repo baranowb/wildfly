@@ -176,6 +176,7 @@
                                         <include>org/jboss/as/test/integration/ee/injection/resource/enventry/EnvEntryTestCase.java</include>
                                         <include>org/jboss/as/test/integration/ee/injection/resource/basic/*TestCase.java</include>
                                         <include>org/jboss/as/test/integration/ee/naming/defaultbindings/**/*TestCase.java</include>
+                                        <include>org/jboss/as/test/integration/jca/reload/*TestCase.java</include>
                                     </includes>
 
                                     <environmentVariables>
@@ -232,6 +233,7 @@
                                         <exclude>org/jboss/as/test/integration/ee/injection/resource/basic/*TestCase.java</exclude>
                                         <exclude>org/jboss/as/test/integration/ee/naming/defaultbindings/**/*TestCase.java</exclude>
                                         <exclude>org/jboss/as/test/integration/jca/moduledeployment/**/*TestCase*.java</exclude>
+                                        <exclude>org/jboss/as/test/integration/jca/reload/*TestCase.java</exclude>
                                     </excludes>
 
                                     <environmentVariables>
