@@ -383,4 +383,7 @@ public interface UndertowLogger extends BasicLogger {
 
     @Message(id = 93, value = "Credential %s is not a clear text password")
     IllegalArgumentException credentialNotClearPassword(String alias);
+
+    @Message(id = 94, value = "Worker used in http-listener: '%s', must be used in remoting subsystem.")
+    String workerValueInHTTPListenerMustMatchRemoting(String worker);
 }

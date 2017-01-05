@@ -23,18 +23,26 @@
 package org.wildfly.extension.undertow;
 
 import io.undertow.UndertowOptions;
+
+import org.jboss.as.controller.ReloadRequiredWriteAttributeHandler;
 import org.jboss.as.controller.AttributeDefinition;
+import org.jboss.as.controller.OperationContext;
+import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.client.helpers.MeasurementUnit;
 import org.jboss.as.controller.registry.AttributeAccess;
+import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.wildfly.extension.io.OptionAttributeDefinition;
+import org.wildfly.extension.undertow.logging.UndertowLogger;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.logging.Level;
 
 /**
  * @author <a href="mailto:tomaz.cerar@redhat.com">Tomaz Cerar</a> (c) 2012 Red Hat Inc.
@@ -135,5 +143,30 @@ public class HttpListenerResourceDefinition extends ListenerResourceDefinition {
         attrs.add(HTTP2_MAX_FRAME_SIZE);
         attrs.add(REQUIRE_HOST_HTTP11);
         return attrs;
+    }
+
+    @Override
+    public void registerAttributes(ManagementResourceRegistration resourceRegistration) {
+        //register as normal
+        super.registerAttributes(resourceRegistration);
+        //override
+        resourceRegistration.unregisterAttribute(WORKER.getName());
+        resourceRegistration.registerReadWriteAttribute(WORKER, null, new WarnignReloadOperationHandler(WORKER));
+    }
+
+    class WarnignReloadOperationHandler extends ReloadRequiredWriteAttributeHandler {
+
+        public WarnignReloadOperationHandler(AttributeDefinition... definitions) {
+            super(definitions);
+            // TODO Auto-generated constructor stub
+        }
+
+        @Override
+        protected void finishModelStage(OperationContext context, ModelNode operation, String attributeName, ModelNode newValue,
+                ModelNode oldValue, Resource model) throws OperationFailedException {
+            super.finishModelStage(context, operation, attributeName, newValue, oldValue, model);
+            context.addResponseWarning(Level.WARNING, UndertowLogger.ROOT_LOGGER.workerValueInHTTPListenerMustMatchRemoting(newValue.asString()));
+        }
+
     }
 }
