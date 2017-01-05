@@ -390,4 +390,6 @@ public interface UndertowLogger extends BasicLogger {
     @Message(id = 95, value = "the path ['%s'] doesn't exist on file system")
     String unableAddHandlerForPath(String path);
 
+    @Message(id = 96, value = "Rolling back worker change. With HTTP upgrade enabled, remoting susbstem and http(s)-listener must share worker. Requested value '%s', remoting value '%s'.")
+    String workerValueInHTTPListenerMustMatchRemoting(String undertowWorker, String remotingWorker);
 }
