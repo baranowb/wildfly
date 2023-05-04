@@ -24,6 +24,8 @@ package org.jboss.as.test.integration.ee.jndi.duplicate;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUBSYSTEM;
 
+import java.io.IOException;
+
 import org.jboss.arquillian.container.test.api.Deployer;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.container.test.api.RunAsClient;
@@ -40,8 +42,11 @@ import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.wildfly.security.manager.WildFlySecurityManager;
 
 /**
  * Deploy apps with same context to check if JNDI bindings are properly cleared on undeploy/failure.
@@ -74,6 +79,11 @@ public class DuplicateJNDIBindingCleanupTestCase {
     @Deployment(name = APP2_ARCHIVE, managed = false)
     public static Archive<?> createDeployment2() {
         return createDeployment(APP2_ARCHIVE);
+    }
+
+    @BeforeClass
+    public static void beforeClass() throws IOException, InterruptedException {
+        Assume.assumeFalse("centos".equalsIgnoreCase(WildFlySecurityManager.getEnvPropertyPrivileged("os.name", "")));
     }
 
     @Test
