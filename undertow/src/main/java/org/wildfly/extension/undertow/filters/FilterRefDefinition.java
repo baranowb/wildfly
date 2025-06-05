@@ -25,8 +25,10 @@ import org.jboss.as.controller.PersistentResourceDefinition;
 import org.jboss.as.controller.ServiceRemoveStepHandler;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.SimpleResourceDefinition;
+import org.jboss.as.controller.capability.RuntimeCapability;
 import org.jboss.as.controller.operations.validation.IntRangeValidator;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -130,6 +132,25 @@ public class FilterRefDefinition extends PersistentResourceDefinition {
             csb.setInstance(new FilterService(frConsumer, fSupplier, lSupplier, predicate, priority));
             csb.install();
         }
+
+        @Override
+        protected void recordCapabilitiesAndRequirements(OperationContext context, ModelNode operation, Resource resource)
+                throws OperationFailedException {
+            // TODO Auto-generated method stub
+            super.recordCapabilitiesAndRequirements(context, operation, resource);
+            final String name = context.getCurrentAddressValue();
+            final String filterCapabilityName = RuntimeCapability.buildDynamicCapabilityName(Capabilities.CAPABILITY_FILTER, name);
+
+            final FilterCapabilities capabilityType;
+            if (isAddressHost(context)) {
+                capabilityType = FilterCapabilities.FILTER_HOST_REF_CAPABILITY;
+            } else {
+                capabilityType = FilterCapabilities.FILTER_LOCATION_REF_CAPABILITY;
+            }
+            context.registerCapability(capabilityType.getDefinition());
+            //context.registerAdditionalCapabilityRequirement(filterCapabilityName, capabilityType.getName(), null);
+        }
+
     }
 
     private static boolean isAddressHost(final OperationContext context) {
