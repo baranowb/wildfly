@@ -80,13 +80,23 @@ public class WebSocketTestCase {
         assertWebSocket(webapp);
     }
 
+    @Test
+    @OperateOnDeployment(CLIENT_IN_DEPLOYMENT)
+    public void testResourceInjectionInDeployment(@ArquillianResource URL webapp) throws Exception {
+        assertWebSocket(webapp, "mes", AnnotatedEndpoint.MESSAGE_OK);
+    }
+
     private void assertWebSocket(URL webapp) throws InterruptedException, IOException, DeploymentException, URISyntaxException {
+        assertWebSocket(webapp, "Stuart", "Hello Stuart");
+    }
+
+    private void assertWebSocket(URL webapp, final String param, final String result) throws InterruptedException, IOException, DeploymentException, URISyntaxException {
         AnnotatedClient endpoint = new AnnotatedClient();
         WebSocketContainer serverContainer = ContainerProvider.getWebSocketContainer();
         try (Session session = serverContainer.connectToServer(endpoint,
                 new URI("ws", "", TestSuiteEnvironment.getServerAddress(), TestSuiteEnvironment.getHttpPort(),
-                        webapp.getPath() + "websocket/Stuart", "", ""))) {
-            Assert.assertEquals("Hello Stuart", endpoint.getMessage());
+                        webapp.getPath() + "websocket/"+param, "", ""))) {
+            Assert.assertEquals(result, endpoint.getMessage());
         }
     }
 

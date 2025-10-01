@@ -8,6 +8,9 @@ package org.wildfly.extension.undertow.deployment;
 import io.undertow.websockets.jsr.JsrWebSocketLogger;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 import org.jboss.as.controller.PathElement;
+import org.jboss.as.ee.component.ComponentDescription;
+import org.jboss.as.ee.component.EEApplicationClasses;
+import org.jboss.as.ee.component.EEModuleDescription;
 import org.jboss.as.ee.utils.ClassLoadingUtils;
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
@@ -17,6 +20,7 @@ import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.annotation.CompositeIndex;
 import org.jboss.as.web.common.WarMetaData;
+import org.jboss.as.web.common.WebComponentDescription;
 import org.jboss.dmr.ModelNode;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -198,6 +202,7 @@ public class UndertowJSRWebSocketDeploymentProcessor implements DeploymentUnitPr
                 if (annotation != null) {
                     String path = annotation.value();
                     addManagementWebsocket(deploymentUnit, endpoint, path);
+                    addSocketWebComponent(deploymentUnit, endpoint, path);
                 }
             }
         }
@@ -220,5 +225,15 @@ public class UndertowJSRWebSocketDeploymentProcessor implements DeploymentUnitPr
         } catch (Exception e) {
             UndertowLogger.ROOT_LOGGER.failedToRegisterWebsocket(endpoint, path, e);
         }
+    }
+
+    private void addSocketWebComponent(final DeploymentUnit deploymentUnit, final Class<?> clazz, final String path) {
+        final EEModuleDescription moduleDescription = deploymentUnit.getAttachment(org.jboss.as.ee.component.Attachments.EE_MODULE_DESCRIPTION);
+        final EEApplicationClasses applicationClassesDescription = deploymentUnit.getAttachment(org.jboss.as.ee.component.Attachments.EE_APPLICATION_CLASSES_DESCRIPTION);
+        final String clazzName = clazz.getCanonicalName();
+        final ComponentDescription componentDescription = new WebComponentDescription("WebSocket."+path+"."+clazzName,
+                clazzName, moduleDescription, deploymentUnit.getServiceName(), applicationClassesDescription);
+        moduleDescription.addComponent(componentDescription);
+        deploymentUnit.addToAttachmentList(WebComponentDescription.WEB_COMPONENTS, componentDescription.getStartServiceName());
     }
 }
